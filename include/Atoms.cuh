@@ -7,23 +7,23 @@ class Atoms {
 
         // 生ポインタの取得
         // 位置
-        float* x_ptr() const { return thrust::raw_pointer_cast(d_x.data()); }
-        float* y_ptr() const { return thrust::raw_pointer_cast(d_y.data()); }
-        float* z_ptr() const { return thrust::raw_pointer_cast(d_z.data()); }
+        float* x_ptr() { return thrust::raw_pointer_cast(d_x.data()); }
+        float* y_ptr() { return thrust::raw_pointer_cast(d_y.data()); }
+        float* z_ptr() { return thrust::raw_pointer_cast(d_z.data()); }
 
         // 速度
-        float* vel_x_ptr() const { return thrust::raw_pointer_cast(d_vel_x.data()); }
-        float* vel_y_ptr() const { return thrust::raw_pointer_cast(d_vel_y.data()); }
-        float* vel_z_ptr() const { return thrust::raw_pointer_cast(d_vel_z.data()); }
+        float* vel_x_ptr() { return thrust::raw_pointer_cast(d_vel_x.data()); }
+        float* vel_y_ptr() { return thrust::raw_pointer_cast(d_vel_y.data()); }
+        float* vel_z_ptr() { return thrust::raw_pointer_cast(d_vel_z.data()); }
 
         // 力
-        float* force_x_ptr() const { return thrust::raw_pointer_cast(d_force_x.data()); }
-        float* force_y_ptr() const { return thrust::raw_pointer_cast(d_force_y.data()); }
-        float* force_z_ptr() const { return thrust::raw_pointer_cast(d_force_z.data()); }
+        float* force_x_ptr() { return thrust::raw_pointer_cast(d_force_x.data()); }
+        float* force_y_ptr() { return thrust::raw_pointer_cast(d_force_y.data()); }
+        float* force_z_ptr() { return thrust::raw_pointer_cast(d_force_z.data()); }
 
         // 質量・原子番号は読み取り専用
         const float* masses_ptr() const { return thrust::raw_pointer_cast(d_masses.data()); }
-        const uint8_t* atomic_numbers_ptr() const { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
+        const int* atomic_numbers_ptr() const { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
 
         // セッター
         // 座標
@@ -42,10 +42,11 @@ class Atoms {
         void set_force_z(thrust::device_vector<float>& force_z) { this->d_force_z.swap(force_z); }
 
         // 更新
-        void update_positions();
-        void update_velocities();
+        void update_positions(float dt);
+        void update_velocities(float dt);
 
         // その他
+        void apply_pbc();
         void remove_drift();
 
     private:
@@ -66,12 +67,14 @@ class Atoms {
         thrust::device_vector<float> d_force_z; // {N, }
 
         thrust::device_vector<float> d_masses;    // {N, }
-        thrust::device_vector<uint8_t> d_atomic_numbers;  // {N, }
+        thrust::device_vector<int> d_atomic_numbers;  // {N, }
 
         // エネルギー
         thrust::device_vector<float> d_potential_energy;    // {1, }
 
-        thrust::device_vector<int> box;
+        thrust::device_vector<int> d_box_x;
+        thrust::device_vector<int> d_box_y;
+        thrust::device_vector<int> d_box_z;
 
         // ホスト側で保持する値
         int num_atoms;  // 原子数

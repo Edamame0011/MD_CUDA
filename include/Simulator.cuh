@@ -21,20 +21,9 @@ class Simulator {
         NeighbourList NL;
         Predictor predictor;
 
+        // シミュレーション設定
+        float dt;
+
         // シミュレーションの状態
         int num_steps;
 };
-
-// GPU側の定数として保持するパラメータ
-struct SimParams {
-    int num_atoms;  // 粒子数
-    float Lbox;     // シミュレーションボックスのサイズ
-    float dt;       // 時間刻み幅
-    float cutoff;   // カットオフ距離
-    float margin;   // マージン距離
-
-    float boltzmann_constant;   // ボルツマン低数
-    float conversion_factor;    // 単位変換係数
-};
-
-extern __const__ SimParams c_params;

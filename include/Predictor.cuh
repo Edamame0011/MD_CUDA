@@ -2,7 +2,7 @@
 #include <thrust/device_vector.h>
 
 #include "Atoms.cuh"
-#include "NeighbourList"
+#include "NeighbourList.cuh"
 
 class Predictor {
     public:
@@ -16,4 +16,4 @@ class Predictor {
         thrust::device_vector<int> x;
         thrust::device_vector<int> edge_index;
         thrust::device_vector<float> edge_weight;
-}
+};
