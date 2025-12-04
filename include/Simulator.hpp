@@ -1,8 +1,11 @@
+#ifndef SIMULATOR_HPP
+#define SIMULATOR_HPP
+
 #include <string>
 #include <thrust/device_vector.h>
 
-#include "Atoms.cuh"
-#include "Predictor.cuh"
+#include "Atoms.hpp"
+#include "Predictor.hpp"
 
 class Simulator {
     public:
@@ -27,3 +30,5 @@ class Simulator {
         // シミュレーションの状態
         int num_steps;
 };
+
+#endif

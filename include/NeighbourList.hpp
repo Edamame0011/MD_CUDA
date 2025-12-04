@@ -1,4 +1,7 @@
-#include "Atoms.cuh"
+#ifndef NEIGHBOURLIST_HPP
+#define NEIGHBOURLIST_HPP
+
+#include "Atoms.hpp"
 #include <thrust/device_vector.h>
 
 class NeighbourList {
@@ -21,3 +24,5 @@ class NeighbourList {
         thrust::device_vector<std::size_t> d_source_indices;
         thrust::device_vector<float> d_config;
 };
+
+#endif

@@ -1,4 +1,4 @@
-#include "Atoms.cuh"
+#include "Atoms.hpp"
 #include "constant.cuh"
 
 #include <thrust/transform_reduce.h>

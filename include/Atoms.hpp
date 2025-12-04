@@ -1,3 +1,6 @@
+#ifndef ATOMS_HPP
+#define ATOMS_HPP
+
 #include <thrust/device_vector.h>
 #include <string>
 
@@ -24,6 +27,13 @@ class Atoms {
         // 質量・原子番号は読み取り専用
         const float* masses_ptr() const { return thrust::raw_pointer_cast(d_masses.data()); }
         const int* atomic_numbers_ptr() const { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
+
+        // ゲッター
+        const thrust::device_vector<float> get_x() const { return d_x; };
+        const thrust::device_vector<float> get_y() const { return d_y; };
+        const thrust::device_vector<float> get_z() const { return d_z; };
+        const float get_Lbox() const { return Lbox; }
+        const int get_num_atoms() const { return num_atoms; }
 
         // セッター
         // 座標
@@ -80,3 +90,5 @@ class Atoms {
         int num_atoms;  // 原子数
         float Lbox;     // シミュレーションボックスのサイズ
 };
+
+#endif
