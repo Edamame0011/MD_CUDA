@@ -32,6 +32,7 @@ class Atoms {
         const thrust::device_vector<float> get_x() const { return d_x; };
         const thrust::device_vector<float> get_y() const { return d_y; };
         const thrust::device_vector<float> get_z() const { return d_z; };
+        const thrust::device_vector<int> get_atomic_numbers() const { return d_atomic_numbers; };
         const float get_Lbox() const { return Lbox; }
         const int get_num_atoms() const { return num_atoms; }
 
