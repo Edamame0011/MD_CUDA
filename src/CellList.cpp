@@ -8,14 +8,25 @@ namespace {
     }
 
     struct Link {
+        const float *d_x, *d_y, *d_z;
+        int* list, *head;
         int M;
-        Link(int _M): M(_M) {}
-        template <typename Tuple>
-        __host__ __device__ int operator() (const Tuple& t) const {
-            int dmyrxi = thrust::get<0>(t) - floorf(thrust::get<0>(t) + 0.5);
-            int dmyryi = thrust::get<1>(t) - floorf(thrust::get<1>(t) + 0.5);
-            int dmyrzi = thrust::get<2>(t) - floorf(thrust::get<2>(t) + 0.5);
-            return (int)((dmyrxi + 0.5) / (float)M) + (int)((dmyryi + 0.5) / (float)M) * M + (int)((dmyrzi + 0.5) / (float)M) * M * M;
+        Link(
+            float* _d_x, 
+            float* _d_y, 
+            float* _d_z, 
+            int* _list, 
+            int* _head, 
+            int _M
+        ) : d_x(_d_x), d_y(_d_y), d_z(_d_z), list(_list), head(_head), M(_M) {}
+        __host__ __device__ void operator() (const int idx) const {
+            int dmyrxi = d_x[idx] - floorf(d_x[idx] + 0.5);
+            int dmyryi = d_y[idx] - floorf(d_y[idx] + 0.5);
+            int dmyrzi = d_z[idx] - floorf(d_z[idx] + 0.5);
+            int icell = (int)((dmyrxi + 0.5) / (float)M) + (int)((dmyryi + 0.5) / (float)M) * M + (int)((dmyrzi + 0.5) / (float)M) * M * M;
+
+            list[idx] = head[icell];
+            head[icell] = idx;
         } 
     };
 }
@@ -60,18 +71,17 @@ void CellList::init_cell(const Atoms& atoms) {
     Lcell = Lbox / (float)M;
 }
 
-void CellList::link(const Atoms& atoms) {
-    const thrust::device_vector<float>& pos_x = atoms.get_x();
-    const thrust::device_vector<float>& pos_y = atoms.get_y();
-    const thrust::device_vector<float>& pos_z = atoms.get_z();
-
-    auto zip_begin = thrust::make_zip_iterator(thrust::make_tuple(pos_x.begin(), pos_y.begin(), pos_z.begin()));
-    auto zip_end = thrust::make_zip_iterator(thrust::make_tuple(pos_x.end(), pos_y.end(), pos_z.end()));
-
-    thrust::transform(zip_begin, zip_end, icell.begin(), Link(M));
-
-    for (int i = 0; i < atoms.get_num_atoms(); i ++) {
-        list[i] = head[icell[i]];
-        head[icell[i]] = i;
-    }
+void CellList::link(Atoms& atoms) {
+    thrust::for_each(
+        thrust::make_counting_iterator(0), 
+        thrust::make_counting_iterator(atoms.get_num_atoms()),
+        Link(
+            atoms.x_ptr(), 
+            atoms.y_ptr(), 
+            atoms.z_ptr(), 
+            thrust::raw_pointer_cast(list.data()), 
+            thrust::raw_pointer_cast(head.data()), 
+            M
+        ) 
+    );
 }

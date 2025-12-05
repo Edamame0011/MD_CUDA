@@ -4,8 +4,19 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <vector_types.h>
 #include <thrust/copy.h>
+#include <NvInfer.h>
+#include <iostream>
+#include <fstream>
 
 namespace {
+    class Logger : public nvinfer1::ILogger {
+        void log(Severity severity, const char* msg) noexcept override {
+            if (severity <= Severity::kWARNING) {
+                std::cout << msg << std::endl;
+            }
+        }
+    } logger;
+
     struct Filter {
         const float* d_x;
         const float* d_y;
@@ -49,9 +60,35 @@ namespace {
             int j = idx % num_atoms;
             
             // 距離の計算
-            
+            float x1 = d_x[i];
+            float y1 = d_y[i];
+            float z1 = d_z[i];
+
+            float x2 = d_x[j];
+            float y2 = d_y[j];
+            float z2 = d_z[j];
+
+            // 距離の計算
+            float dx = x1 - x2;
+            float dy = y1 - y2;
+            float dz = z1 - z2;
+
+            float dist = sqrtf(dx * dx + dy * dy + dz * dz);
+
+            return thrust::make_tuple(i, j, dist);
         }
     };
+
+    std::string getDataTypeString(nvinfer1::DataType type) {
+        switch (type) {
+            case nvinfer1::DataType::kFLOAT: return "FP32";
+            case nvinfer1::DataType::kHALF: return "FP16";
+            case nvinfer1::DataType::kINT8: return "INT8";
+            case nvinfer1::DataType::kINT32: return "INT32";
+            case nvinfer1::DataType::kBOOL: return "BOOL";
+            default: return "Unknown";
+        }
+    }
 }
 
 Predictor::Predictor(const std::string& model_path) {
@@ -59,7 +96,46 @@ Predictor::Predictor(const std::string& model_path) {
 }
 
 void Predictor::load_model(const std::string& model_path) {
-    // load model
+    // ファイルをバイナリで読み込む
+    std::ifstream file(model_path, std::ios::binary | std::ios::ate);
+    if (!file.good()) {
+        std::cerr << "Error reading engine file" << std::endl;
+        throw;
+    }
+    std::size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    std::vector<char> engineData(size);
+    file.read(engineData.data(), size);
+    file.close();
+
+    // TensorRTオブジェクトの初期化
+    runtime = nvinfer1::createInferRuntime(logger);
+    engine = runtime->deserializeCudaEngine(engineData.data(), size);
+    context = engine->createExecutionContext();
+}
+
+void Predictor::printInfo(nvinfer1::ICudaEngine* engine) {
+    int nbIOTensors = engine->getNbIOTensors();
+    for (int i = 0; i < nbIOTensors; i ++) {
+        const char* name = engine->getIOTensorName(i);
+
+        nvinfer1::TensorIOMode mode = engine->getTensorIOMode(name);
+        nvinfer1::Dims dims = engine->getTensorShape(name);
+        nvinfer1::DataType type = engine->getTensorDataType(name);
+
+        bool isInput = (mode == nvinfer1::TensorIOMode::kINPUT);
+
+        std::cout << "Index " << i << ": "
+                  << (isInput? "[input]" : "[output]")
+                  << "Name: " << name
+                  << ", Type: " << getDataTypeString(type)
+                  << ", Shape: (";
+        for (int d = 0; d < dims.nbDims; d ++) {
+            std::cout << dims.d[d];
+            if (d < dims.nbDims - 1) std::cout << ",";
+        }
+        std::cout << ")" << std::endl;
+    }
 }
 
 void Predictor::convet_atoms(Atoms& atoms, float cutoff) {

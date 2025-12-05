@@ -10,7 +10,7 @@ class CellList {
         void init_maps();
         void init_cell(const Atoms& atoms);
 
-        void link(const Atoms& atoms);
+        void link(Atoms& atoms);
 
     private:
         int M;
