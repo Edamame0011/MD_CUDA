@@ -69,9 +69,9 @@ namespace {
 
 Predictor_libtorch::Predictor_libtorch(Atoms& atoms) {
     int N = atoms.get_num_atoms();
-    d_valid_indices.reserve(N * N);
-    d_edge_index.reserve(N * N / 2);
-    d_edge_index.reserve(N * N / 2);
+    d_valid_indices.resize(N * N, 0);
+    d_edge_index.resize(N * N / 2, 0);
+    d_edge_index.resize(N * N / 2, 0);
 }
 
 void Predictor_libtorch::load_model(const std::string& model_path) {

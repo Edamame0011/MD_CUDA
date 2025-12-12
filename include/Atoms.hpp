@@ -30,11 +30,11 @@ class Atoms {
         int* atomic_numbers_ptr() { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
 
         // ゲッター
-        const thrust::device_vector<float> get_x() const { return d_x; };
-        const thrust::device_vector<float> get_y() const { return d_y; };
-        const thrust::device_vector<float> get_z() const { return d_z; };
-        const thrust::device_vector<float> get_masses() const { return d_masses; };
-        thrust::device_vector<int> get_atomic_numbers() { return d_atomic_numbers; };
+        const thrust::device_vector<float>& get_x() const { return d_x; };
+        const thrust::device_vector<float>& get_y() const { return d_y; };
+        const thrust::device_vector<float>& get_z() const { return d_z; };
+        const thrust::device_vector<float>& get_masses() const { return d_masses; };
+        const thrust::device_vector<int>& get_atomic_numbers() const { return d_atomic_numbers; };
         float get_potential_energy() const { return potential_energy; }
         float get_Lbox() const { return Lbox; }
         int get_num_atoms() const { return num_atoms; }
