@@ -235,6 +235,8 @@ Atoms::Atoms(std::string data_path) {
     d_force_z = h_force_z;
     d_masses = h_masses;
     d_atomic_numbers = h_atomic_numbers;
+
+    std::cout << "構造ファイルを読み込みました：" << data_path << std::endl;
 }
 
 void Atoms::update_positions(float dt) {

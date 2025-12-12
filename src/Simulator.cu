@@ -7,6 +7,9 @@ void Simulator::run_nve(const float tsim) {
     int steps = tsim / dt;
     steps += current_steps;
 
+    predictor.predict(atoms, NL);
+    output();
+
     const auto logbin = std::pow(10.0f, 1.0f / 9);
     int counter = 5;
     auto checker = 1e-3 * std::pow(logbin, counter);
@@ -26,7 +29,7 @@ void Simulator::step_nve() {
     atoms.update_positions(dt);
     atoms.apply_pbc();
     NL.check(atoms);
-    predictor->predict(atoms, NL);
+    predictor.predict(atoms, NL);
     atoms.update_velocities(dt);
 }
 

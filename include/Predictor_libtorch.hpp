@@ -13,7 +13,7 @@
 
 class Predictor_libtorch : public Predictor {
     public:
-        Predictor_libtorch(Atoms& atoms);
+        Predictor_libtorch(Atoms& atoms, const std::string& model_path);
         void load_model(const std::string& model_path);
         void convert_atoms(Atoms& atoms, NeighbourList& NL);
         void predict(Atoms& atoms, NeighbourList& NL) override;

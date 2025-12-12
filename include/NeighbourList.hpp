@@ -6,6 +6,8 @@
 
 class NeighbourList {
     public:
+        NeighbourList(float _cutoff, float _margin) : cutoff(_cutoff), margin(_margin) {}
+
         // ポインタの取得（読み取り専用）
         const int* target_indices_ptr() const { return thrust::raw_pointer_cast(d_valid_indices.data()); }
         const float* config_x_ptr() const { return thrust::raw_pointer_cast(d_config_x.data()); }

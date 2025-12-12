@@ -97,10 +97,10 @@ void NeighbourList::generate(Atoms& atoms) {
     int num_atoms = atoms.get_num_atoms();
 
     // 十分なサイズのメモリを確保
-    d_config_x.reserve(num_atoms);
-    d_config_y.reserve(num_atoms);
-    d_config_z.reserve(num_atoms);
-    d_valid_indices.reserve(num_atoms * num_atoms);
+    d_config_x.resize(num_atoms, 0);
+    d_config_y.resize(num_atoms, 0);
+    d_config_z.resize(num_atoms, 0);
+    d_valid_indices.resize(num_atoms * num_atoms, 0);
 
     float* d_x = atoms.x_ptr();
     float* d_y = atoms.y_ptr();

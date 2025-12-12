@@ -6,12 +6,12 @@
 #include <random>
 
 #include "Atoms.hpp"
-#include "Predictor.hpp"
+#include "Predictor_libtorch.hpp"
 #include "NeighbourList.hpp"
 
 class Simulator {
     public:
-        Simulator(Atoms& _atoms, NeighbourList& _NL, Predictor& _predictor, float _dt) : atoms(_atoms), NL(_NL), predictor(&_predictor), dt(_dt) {}
+        Simulator(Atoms& _atoms, NeighbourList& _NL, Predictor_libtorch& _predictor, float _dt) : atoms(_atoms), NL(_NL), predictor(_predictor), dt(_dt) {}
         void run_nve(const float tsim);
 //        void run_nvt(const float tsim, const float temperature);
 //        void run_anneal(const float cooling_rate, const float start_temperature, const float target_temperature);
@@ -27,7 +27,7 @@ class Simulator {
 
         Atoms& atoms;
         NeighbourList& NL;
-        Predictor* predictor;   // Predictorは純粋仮想関数を持つクラスなので、ポインタにする
+        Predictor_libtorch& predictor; 
 
 
         // シミュレーション設定

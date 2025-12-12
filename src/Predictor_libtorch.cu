@@ -67,16 +67,19 @@ namespace {
     };
 }
 
-Predictor_libtorch::Predictor_libtorch(Atoms& atoms) {
+Predictor_libtorch::Predictor_libtorch(Atoms& atoms, const std::string& model_path) {
     int N = atoms.get_num_atoms();
     d_valid_indices.resize(N * N, 0);
     d_edge_index.resize(N * N / 2, 0);
     d_edge_index.resize(N * N / 2, 0);
+
+    load_model(model_path);
 }
 
 void Predictor_libtorch::load_model(const std::string& model_path) {
     try{
         model = torch::jit::load(model_path);
+        model.to(torch::kCUDA);
         std::cout << "モデルをロードしました：" << model_path << std::endl; 
     }
     catch(c10::Error& e){
@@ -119,6 +122,7 @@ void Predictor_libtorch::convert_atoms(Atoms& atoms, NeighbourList& NL) {
 
 void Predictor_libtorch::predict(Atoms& atoms, NeighbourList& NL) {
     convert_atoms(atoms, NL);
+    std::cout << "グラフ構造へ変換" << std::endl;
 
     int num_atoms = atoms.get_num_atoms();
 
@@ -141,6 +145,8 @@ void Predictor_libtorch::predict(Atoms& atoms, NeighbourList& NL) {
         {num_edges}, 
         options.dtype(torch::kFloat32)
     );
+
+    std::cout << "Tensorオブジェクトの作成" << std::endl;
 
     // 推論
     model.eval();
