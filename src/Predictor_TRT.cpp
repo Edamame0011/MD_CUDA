@@ -1,4 +1,4 @@
-#include "Predictor.hpp"
+#include "Predictor_TRT.hpp"
 #include <thrust/transform.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -91,11 +91,11 @@ namespace {
     }
 }
 
-Predictor::Predictor(const std::string& model_path) {
+Predictor_TRT::Predictor_TRT(const std::string& model_path) {
     load_model(model_path);
 }
 
-void Predictor::load_model(const std::string& model_path) {
+void Predictor_TRT::load_model(const std::string& model_path) {
     // ファイルをバイナリで読み込む
     std::ifstream file(model_path, std::ios::binary | std::ios::ate);
     if (!file.good()) {
@@ -114,7 +114,7 @@ void Predictor::load_model(const std::string& model_path) {
     context = engine->createExecutionContext();
 }
 
-void Predictor::printInfo(nvinfer1::ICudaEngine* engine) {
+void Predictor_TRT::printInfo(nvinfer1::ICudaEngine* engine) {
     int nbIOTensors = engine->getNbIOTensors();
     for (int i = 0; i < nbIOTensors; i ++) {
         const char* name = engine->getIOTensorName(i);
@@ -138,7 +138,7 @@ void Predictor::printInfo(nvinfer1::ICudaEngine* engine) {
     }
 }
 
-void Predictor::convet_atoms(Atoms& atoms, float cutoff) {
+void Predictor_TRT::convet_atoms(Atoms& atoms, float cutoff) {
     int num_atoms = atoms.get_num_atoms();
     this->x = atoms.get_atomic_numbers();
     float cutoff_sq = cutoff * cutoff;

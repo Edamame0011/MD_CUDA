@@ -2,6 +2,7 @@
 #define ATOMS_HPP
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <string>
 
 class Atoms {
@@ -24,23 +25,29 @@ class Atoms {
         float* force_y_ptr() { return thrust::raw_pointer_cast(d_force_y.data()); }
         float* force_z_ptr() { return thrust::raw_pointer_cast(d_force_z.data()); }
 
-        // 質量・原子番号は読み取り専用
-        const float* masses_ptr() const { return thrust::raw_pointer_cast(d_masses.data()); }
-        const int* atomic_numbers_ptr() const { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
+        // 質量・原子番号
+        float* masses_ptr() { return thrust::raw_pointer_cast(d_masses.data()); }
+        int* atomic_numbers_ptr() { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
 
         // ゲッター
         const thrust::device_vector<float> get_x() const { return d_x; };
         const thrust::device_vector<float> get_y() const { return d_y; };
         const thrust::device_vector<float> get_z() const { return d_z; };
-        const thrust::device_vector<int> get_atomic_numbers() const { return d_atomic_numbers; };
-        const float get_Lbox() const { return Lbox; }
-        const int get_num_atoms() const { return num_atoms; }
+        const thrust::device_vector<float> get_masses() const { return d_masses; };
+        thrust::device_vector<int> get_atomic_numbers() { return d_atomic_numbers; };
+        float get_potential_energy() const { return potential_energy; }
+        float get_Lbox() const { return Lbox; }
+        int get_num_atoms() const { return num_atoms; }
 
         // セッター
         // 座標
         void set_x(thrust::device_vector<float>& x) { this->d_x.swap(x); }
         void set_y(thrust::device_vector<float>& y) { this->d_x.swap(y); }
         void set_z(thrust::device_vector<float>& z) { this->d_x.swap(z); }
+        void set_vel_x(thrust::host_vector<float>& vel_x) { this->d_vel_x = vel_x; }
+        void set_vel_y(thrust::host_vector<float>& vel_y) { this->d_vel_y = vel_y; }
+        void set_vel_z(thrust::host_vector<float>& vel_z) { this->d_vel_z = vel_z; }
+        void set_potential_energy(float potential_energy) { this->potential_energy = potential_energy; }
 
         // 速度
         void set_vel_x(thrust::device_vector<float>& vel_x) { this->d_vel_x.swap(vel_x); }
@@ -59,6 +66,7 @@ class Atoms {
         // その他
         void apply_pbc();
         void remove_drift();
+        float calc_kinetic_energy();
 
     private:
         // 原子のデータ
@@ -80,14 +88,12 @@ class Atoms {
         thrust::device_vector<float> d_masses;    // {N, }
         thrust::device_vector<int> d_atomic_numbers;  // {N, }
 
-        // エネルギー
-        thrust::device_vector<float> d_potential_energy;    // {1, }
-
         thrust::device_vector<int> d_box_x;
         thrust::device_vector<int> d_box_y;
         thrust::device_vector<int> d_box_z;
 
         // ホスト側で保持する値
+        float potential_energy;
         int num_atoms;  // 原子数
         float Lbox;     // シミュレーションボックスのサイズ
 };

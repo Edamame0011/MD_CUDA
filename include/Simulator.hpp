@@ -3,32 +3,39 @@
 
 #include <string>
 #include <thrust/device_vector.h>
+#include <random>
 
 #include "Atoms.hpp"
 #include "Predictor.hpp"
+#include "NeighbourList.hpp"
 
 class Simulator {
     public:
+        Simulator(Atoms& _atoms, NeighbourList& _NL, Predictor& _predictor, float _dt) : atoms(_atoms), NL(_NL), predictor(&_predictor), dt(_dt) {}
         void run_nve(const float tsim);
-        void run_nvt(const float tsim, const float temperature);
-        void run_anneal(const float cooling_rate, const float start_temperature, const float target_temperature);
+//        void run_nvt(const float tsim, const float temperature);
+//        void run_anneal(const float cooling_rate, const float start_temperature, const float target_temperature);
+        void set_initial_temperature(const float temperature, std::mt19937& mt);
+        void init_simulation();
+
 
     private:
         // シミュレーションの補助用関数
-        void set_initial_temperature(const float temperature);
-        void init_simulation();
         void step_nve();
-        void step_nvt();
+        void output();
+//        void step_nvt();
 
-        Atoms atoms;
-        NeighbourList NL;
-        Predictor predictor;
+        Atoms& atoms;
+        NeighbourList& NL;
+        Predictor* predictor;   // Predictorは純粋仮想関数を持つクラスなので、ポインタにする
+
 
         // シミュレーション設定
         float dt;
 
         // シミュレーションの状態
-        int num_steps;
+        int current_steps;
+        float current_temperature;
 };
 
 #endif
