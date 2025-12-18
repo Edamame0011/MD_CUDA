@@ -3,13 +3,11 @@
 #include <thrust/host_vector.h>
 #include <iomanip>
 
-#include <nvtx3/nvtx3.hpp>
-
 void Simulator::run_nve(const float tsim) {
     int steps = (int)tsim / dt;
     steps += current_steps;
 
-    predictor.predict(atoms, NL);
+    predictor->predict(atoms, NL);
     output();
 
     const auto logbin = std::pow(10.0f, 1.0f / 9);
@@ -27,35 +25,12 @@ void Simulator::run_nve(const float tsim) {
 }
 
 void Simulator::step_nve() {
-    {
-        nvtx3::scoped_range r("update_velocities_1");
-        atoms.update_velocities(dt);
-    }
-    
-    {
-        nvtx3::scoped_range r("update_positions");
-        atoms.update_positions(dt);
-    }
-    
-    {   
-        nvtx3::scoped_range r("apply_pbc");
-        atoms.apply_pbc();
-    }
-    
-    {
-        nvtx3::scoped_range r("NL_check");
-        NL.check(atoms);
-    }
-    
-    {
-        nvtx3::scoped_range r("predict");
-        predictor.predict(atoms, NL);
-    }
-    
-    {
-        nvtx3::scoped_range r("update_velocities_2");
-        atoms.update_velocities(dt);
-    }
+    atoms.update_velocities(dt);
+    atoms.update_positions(dt);
+    atoms.apply_pbc();    
+    NL.check(atoms);
+    predictor->predict(atoms, NL);
+    atoms.update_velocities(dt);
 }
 
 void Simulator::init_simulation() {

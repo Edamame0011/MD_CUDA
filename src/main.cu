@@ -23,7 +23,7 @@ int main() {
     NeighbourList NL(cutoff, margin);
     Predictor_libtorch predictor(atoms, model_path);
 
-    Simulator simulator(atoms, NL, predictor, dt);
+    Simulator simulator(atoms, NL, &predictor, dt);
     simulator.set_initial_temperature(temperature, mt);
     simulator.init_simulation();
 

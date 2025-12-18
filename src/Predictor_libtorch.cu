@@ -273,12 +273,13 @@ void Predictor_libtorch::predict(Atoms& atoms, NeighbourList& NL) {
 
     try {
         auto result_iv = model.forward({x, edge_index, edge_weight});
+
         auto result_tuple = result_iv.toTuple();
         auto elements = result_tuple->elements();
-        
+
         torch::Tensor energy = elements[0].toTensor().to(torch::kFloat32).detach();
         torch::Tensor forces = elements[1].toTensor().to(torch::kFloat32).detach();
-
+        
         forces = forces.t().contiguous();
 
         // libtorch側のポインター
