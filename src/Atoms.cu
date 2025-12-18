@@ -16,12 +16,10 @@ namespace {
         float dt;
         PosUpdate(float _dt) : dt(_dt) {}
         template <typename Tuple>
-        __host__ __device__ auto operator() (const Tuple& pos, const Tuple& vel) const {
-            return thrust::make_tuple(
-                thrust::get<0>(pos) + dt * thrust::get<0>(vel), 
-                thrust::get<1>(pos) + dt * thrust::get<1>(vel), 
-                thrust::get<2>(pos) + dt * thrust::get<2>(vel)
-            );
+        __host__ __device__ void operator() (Tuple t) {
+            thrust::get<0>(t) += dt * thrust::get<3>(t);
+            thrust::get<1>(t) += dt * thrust::get<4>(t);
+            thrust::get<2>(t) += dt * thrust::get<5>(t);
         }
     };
 
@@ -39,7 +37,7 @@ namespace {
 
     struct Multiply {
         template <typename Tuple>
-        __host__ __device__ float operator() (const Tuple& t) const {
+        __host__ __device__ float operator() (Tuple t) const {
             return thrust::get<0>(t) * thrust::get<1>(t);
         }
     };
@@ -48,7 +46,7 @@ namespace {
         float avg_x, avg_y, avg_z;
         RemoveDrift(float _avg_x, float _avg_y, float _avg_z) : avg_x(_avg_x), avg_y(_avg_y), avg_z(_avg_z) {}
         template <typename Tuple>
-        __host__ __device__ auto operator() (const Tuple& vel) const {
+        __host__ __device__ auto operator() (Tuple vel) const {
             return thrust::make_tuple(
                 thrust::get<0>(vel) - avg_x, 
                 thrust::get<1>(vel) - avg_y, 
@@ -78,7 +76,7 @@ namespace {
 
     struct CalcKinEnergy {
         template <typename Tuple>
-        __host__ __device__ float operator() (const Tuple& t) {
+        __host__ __device__ float operator() (Tuple t) {
             float vel_x = thrust::get<0>(t);
             float vel_y = thrust::get<1>(t);
             float vel_z = thrust::get<2>(t);
@@ -178,7 +176,6 @@ Atoms::Atoms(std::string data_path) {
     }
 
     std::string line;
-    int num_atoms;
     std::getline(file, line);
     num_atoms = std::stoi(line);
     d_box_x.resize(num_atoms, 0);
@@ -199,10 +196,10 @@ Atoms::Atoms(std::string data_path) {
            lattice_y[0] >> lattice_y[1] >> lattice_y[2] >>
            lattice_z[0] >> lattice_z[1] >> lattice_z[2];
     // とりあえず正方格子を想定
-    float box_size = lattice_x[0];         
+    Lbox = lattice_x[0];         
 
     // 原子の情報を保持する変数
-    thrust::host_vector<int> h_atomic_numbers(num_atoms);
+    thrust::host_vector<int64_t> h_atomic_numbers(num_atoms);
     thrust::host_vector<float> h_x(num_atoms);
     thrust::host_vector<float> h_y(num_atoms);
     thrust::host_vector<float> h_z(num_atoms);
@@ -237,13 +234,14 @@ Atoms::Atoms(std::string data_path) {
     d_atomic_numbers = h_atomic_numbers;
 
     std::cout << "構造ファイルを読み込みました：" << data_path << std::endl;
+    std::cout << "原子数：" << num_atoms << std::endl;
+    std::cout << "シミュレーションボックスの大きさ：" << Lbox << " Å" << std::endl; 
 }
 
 void Atoms::update_positions(float dt) {
-    auto zip_begin = thrust::make_zip_iterator(thrust::make_tuple(d_x.begin(), d_y.begin(), d_z.begin()));
-    auto zip_end = thrust::make_zip_iterator(thrust::make_tuple(d_x.end(), d_y.end(), d_z.end()));
-    auto zip_vel_begin = thrust::make_zip_iterator(thrust::make_tuple(d_vel_x.begin(), d_vel_y.begin(), d_vel_z.begin()));
-    thrust::transform(zip_begin, zip_end, zip_vel_begin, zip_begin, PosUpdate(dt));
+    auto zip_begin = thrust::make_zip_iterator(thrust::make_tuple(d_x.begin(), d_y.begin(), d_z.begin(), d_vel_x.begin(), d_vel_y.begin(), d_vel_z.begin()));
+    auto zip_end = thrust::make_zip_iterator(thrust::make_tuple(d_x.end(), d_y.end(), d_z.end(), d_vel_x.end(), d_vel_y.end(), d_vel_z.end()));
+    thrust::for_each(zip_begin, zip_end, PosUpdate(dt));
 }
 
 void Atoms::update_velocities(float dt) {
@@ -324,7 +322,7 @@ float Atoms::calc_kinetic_energy() {
         zip_begin, 
         zip_end, 
         CalcKinEnergy(), 
-        0.0, 
+        0.0f, 
         thrust::plus<float>()
     );
 

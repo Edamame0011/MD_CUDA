@@ -21,7 +21,7 @@ class Predictor_libtorch : public Predictor {
         torch::jit::script::Module model;
 
         // 入力テンソル
-        thrust::device_vector<int> d_edge_index;
+        thrust::device_vector<int64_t> d_edge_index;
         thrust::device_vector<float> d_edge_weight;
 
         // カットオフ距離以内にある原子のインデックスを保存するバッファ

@@ -30,7 +30,7 @@ int main() {
     // 時間の計測
     auto start = std::chrono::steady_clock::now();
 
-    simulator.run_nve(1e+3);
+    simulator.run_nve(5e+3);
 
     auto end = std::chrono::steady_clock::now();
     double elapsed_s = std::chrono::duration<double>(end - start).count();

@@ -3,8 +3,10 @@
 #include <thrust/host_vector.h>
 #include <iomanip>
 
+#include <nvtx3/nvtx3.hpp>
+
 void Simulator::run_nve(const float tsim) {
-    int steps = tsim / dt;
+    int steps = (int)tsim / dt;
     steps += current_steps;
 
     predictor.predict(atoms, NL);
@@ -17,7 +19,7 @@ void Simulator::run_nve(const float tsim) {
     while (current_steps < steps) {
         step_nve();
         current_steps ++;
-        if (dt + current_steps > checker) {
+        if (dt * current_steps > checker) {
             output();
             checker *= logbin;
         }
@@ -25,16 +27,41 @@ void Simulator::run_nve(const float tsim) {
 }
 
 void Simulator::step_nve() {
-    atoms.update_velocities(dt);
-    atoms.update_positions(dt);
-    atoms.apply_pbc();
-    NL.check(atoms);
-    predictor.predict(atoms, NL);
-    atoms.update_velocities(dt);
+    {
+        nvtx3::scoped_range r("update_velocities_1");
+        atoms.update_velocities(dt);
+    }
+    
+    {
+        nvtx3::scoped_range r("update_positions");
+        atoms.update_positions(dt);
+    }
+    
+    {   
+        nvtx3::scoped_range r("apply_pbc");
+        atoms.apply_pbc();
+    }
+    
+    {
+        nvtx3::scoped_range r("NL_check");
+        NL.check(atoms);
+    }
+    
+    {
+        nvtx3::scoped_range r("predict");
+        predictor.predict(atoms, NL);
+    }
+    
+    {
+        nvtx3::scoped_range r("update_velocities_2");
+        atoms.update_velocities(dt);
+    }
 }
 
 void Simulator::init_simulation() {
     current_steps = 0;
+
+    atoms.apply_pbc();
 
     // 隣接リストの作成
     NL.generate(atoms);
@@ -76,7 +103,7 @@ void Simulator::output() {
     float U = atoms.get_potential_energy();
     int dof = 3 * atoms.get_num_atoms();
     float temperature = 2 * K / (dof * boltzmann_constant);
-    std::cout << std::setprecision(15) << std::scientific << dt << ", "
+    std::cout << std::setprecision(15) << std::scientific << current_steps * dt << ", "
                                                           << K << ", "
                                                           << U << ", "
                                                           << K + U << ", "

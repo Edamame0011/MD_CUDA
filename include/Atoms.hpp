@@ -27,14 +27,17 @@ class Atoms {
 
         // 質量・原子番号
         float* masses_ptr() { return thrust::raw_pointer_cast(d_masses.data()); }
-        int* atomic_numbers_ptr() { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
+        int64_t* atomic_numbers_ptr() { return thrust::raw_pointer_cast(d_atomic_numbers.data()); }
 
         // ゲッター
-        const thrust::device_vector<float>& get_x() const { return d_x; };
-        const thrust::device_vector<float>& get_y() const { return d_y; };
-        const thrust::device_vector<float>& get_z() const { return d_z; };
-        const thrust::device_vector<float>& get_masses() const { return d_masses; };
-        const thrust::device_vector<int>& get_atomic_numbers() const { return d_atomic_numbers; };
+        const thrust::device_vector<float>& get_x() const { return d_x; }
+        const thrust::device_vector<float>& get_y() const { return d_y; }
+        const thrust::device_vector<float>& get_z() const { return d_z; }
+        const thrust::device_vector<float>& get_force_x() const { return d_force_x; }
+        const thrust::device_vector<float>& get_force_y() const { return d_force_y; }
+        const thrust::device_vector<float>& get_force_z() const { return d_force_z; }
+        const thrust::device_vector<float>& get_masses() const { return d_masses; }
+        const thrust::device_vector<int64_t>& get_atomic_numbers() const { return d_atomic_numbers; }
         float get_potential_energy() const { return potential_energy; }
         float get_Lbox() const { return Lbox; }
         int get_num_atoms() const { return num_atoms; }
@@ -42,8 +45,8 @@ class Atoms {
         // セッター
         // 座標
         void set_x(thrust::device_vector<float>& x) { this->d_x.swap(x); }
-        void set_y(thrust::device_vector<float>& y) { this->d_x.swap(y); }
-        void set_z(thrust::device_vector<float>& z) { this->d_x.swap(z); }
+        void set_y(thrust::device_vector<float>& y) { this->d_y.swap(y); }
+        void set_z(thrust::device_vector<float>& z) { this->d_z.swap(z); }
         void set_vel_x(thrust::host_vector<float>& vel_x) { this->d_vel_x = vel_x; }
         void set_vel_y(thrust::host_vector<float>& vel_y) { this->d_vel_y = vel_y; }
         void set_vel_z(thrust::host_vector<float>& vel_z) { this->d_vel_z = vel_z; }
@@ -86,7 +89,7 @@ class Atoms {
         thrust::device_vector<float> d_force_z; // {N, }
 
         thrust::device_vector<float> d_masses;    // {N, }
-        thrust::device_vector<int> d_atomic_numbers;  // {N, }
+        thrust::device_vector<int64_t> d_atomic_numbers;  // {N, }
 
         thrust::device_vector<int> d_box_x;
         thrust::device_vector<int> d_box_y;

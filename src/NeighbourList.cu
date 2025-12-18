@@ -11,7 +11,9 @@ namespace {
         const float* d_z;
         float cutoff_plus_margin_sq;
         int num_atoms;
-        Generate(const float* _d_x, const float* _d_y, const float* _d_z, int _num_atoms, float _cutoff_plus_margin_sq) : d_x(_d_x), d_y(_d_y), d_z(_d_z), num_atoms(_num_atoms), cutoff_plus_margin_sq(_cutoff_plus_margin_sq) {}
+        float Lbox;
+        float Linv;
+        Generate(const float* _d_x, const float* _d_y, const float* _d_z, int _num_atoms, float _Lbox, float _Linv, float _cutoff_plus_margin_sq) : d_x(_d_x), d_y(_d_y), d_z(_d_z), num_atoms(_num_atoms), Lbox(_Lbox), Linv(_Linv), cutoff_plus_margin_sq(_cutoff_plus_margin_sq) {}
         __host__ __device__ bool operator() (const int idx) {
             int i = idx / num_atoms;
             int j = idx % num_atoms;
@@ -30,6 +32,11 @@ namespace {
             float dx = x1 - x2;
             float dy = y1 - y2;
             float dz = z1 - z2;
+
+            // PBC補正
+            dx -= Lbox * floorf(dx * Linv + 0.5);
+            dy -= Lbox * floorf(dy * Linv + 0.5);
+            dz -= Lbox * floorf(dz * Linv + 0.5);
 
             float dist_sq = dx * dx + dy * dy + dz * dz;
 
@@ -57,12 +64,19 @@ namespace {
         const float* d_conf_y;
         const float* d_conf_z;
 
-        CalcDist(const float* _d_x, const float* _d_y, const float* _d_z, const float* _d_conf_x, const float* _d_conf_y, const float* _d_conf_z) : d_x(_d_x), d_y(_d_y), d_z(_d_z), d_conf_x(_d_conf_x), d_conf_y(_d_conf_y), d_conf_z(_d_conf_z) {}
+        float Lbox, Linv;
+
+        CalcDist(const float* _d_x, const float* _d_y, const float* _d_z, const float* _d_conf_x, const float* _d_conf_y, const float* _d_conf_z, float _Lbox, float _Linv) : d_x(_d_x), d_y(_d_y), d_z(_d_z), d_conf_x(_d_conf_x), d_conf_y(_d_conf_y), d_conf_z(_d_conf_z), Lbox(_Lbox), Linv(_Linv) {}
 
         __host__ __device__ Top2 operator () (const int idx) {
             float dx = d_x[idx] - d_conf_x[idx];
             float dy = d_y[idx] - d_conf_y[idx];
             float dz = d_z[idx] - d_conf_z[idx];
+
+            // PBC補正
+            dx -= Lbox * floorf(dx * Linv + 0.5);
+            dy -= Lbox * floorf(dy * Linv + 0.5);
+            dz -= Lbox * floorf(dz * Linv + 0.5);
 
             float dist_sq = dx * dx + dy * dy + dz * dz;
 
@@ -95,6 +109,7 @@ namespace {
 
 void NeighbourList::generate(Atoms& atoms) {
     int num_atoms = atoms.get_num_atoms();
+    float Lbox = atoms.get_Lbox();
 
     // 十分なサイズのメモリを確保
     d_config_x.resize(num_atoms, 0);
@@ -112,10 +127,11 @@ void NeighbourList::generate(Atoms& atoms) {
         thrust::make_counting_iterator(0), 
         thrust::make_counting_iterator(num_atoms * num_atoms), 
         d_valid_indices.begin(), 
-        Generate(d_x, d_y, d_z, num_atoms, cutoff_plus_margin_sq)
+        Generate(d_x, d_y, d_z, num_atoms, Lbox, 1 / Lbox, cutoff_plus_margin_sq)
     );
 
     int NL_size = end_ptr - d_valid_indices.begin();
+
     d_valid_indices.resize(NL_size);
 
     // 座標をコピー
@@ -131,6 +147,8 @@ void NeighbourList::check(Atoms& atoms) {
     float* d_y = atoms.y_ptr();
     float* d_z = atoms.z_ptr();
 
+    float Lbox = atoms.get_Lbox();
+
     // 最も移動距離が長い2粒子の移動距離を計算
     Top2 result = thrust::transform_reduce(
         thrust::make_counting_iterator(0), 
@@ -141,7 +159,9 @@ void NeighbourList::check(Atoms& atoms) {
             d_z, 
             thrust::raw_pointer_cast(d_config_x.data()), 
             thrust::raw_pointer_cast(d_config_y.data()), 
-            thrust::raw_pointer_cast(d_config_z.data())
+            thrust::raw_pointer_cast(d_config_z.data()), 
+            Lbox, 
+            1 / Lbox
         ), 
         Top2(), 
         MergeTop2()
